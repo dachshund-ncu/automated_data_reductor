@@ -3,6 +3,66 @@ from PIL import Image
 import streamlit as st
 import numpy as np
 import pandas as pd
+from data.dataReductorMultipleFiles import MultipleDataReductor
+from datetime import datetime
+import tempfile
+
+DE_CAT = os.path.dirname(__file__)
+
+def generate_timestamp_dirname():
+    """
+    Generates a directory name based on the current timestamp, including nanoseconds.
+    """
+    now = datetime.now()
+    timestamp_str = now.strftime("%Y%m%d_%H%M%S_%f")
+    return f"dir_{timestamp_str}"
+
+def displayMessageOnLoad(uploaded_files, use_caltab, is_onoff):
+    if uploaded_files is not None:
+        st.write(f"You have uploaded {len(uploaded_files)} files")
+    if use_caltab:
+        st.write("Caltabs will be used")
+    else:
+        st.write("Caltabs will not be used")
+    if is_onoff:
+        st.write(f"Reduction using on-off technique")
+    else:
+        st.write(f"Reduction using frequency-switch technique")
+
+def processUploadedFiles(
+        uploadedFiles: list,
+        isOnOff: bool,
+        isCal: bool,
+        BBCLHC: int,
+        BBCRHC: int):
+    # -- prepare data --
+    tmp_reduction_dir = os.path.join(DE_CAT, "temporary_data", generate_timestamp_dirname())
+    os.makedirs(tmp_reduction_dir, exist_ok = True)
+    # list with files that were managed to
+    data_reduction_files = []
+    for uploadedFile in uploadedFiles:
+        if uploadedFile is not None:
+            fileSavePath = os.path.join(tmp_reduction_dir, uploadedFile.name)
+            try:
+                fileContent = uploadedFile.getvalue()
+                with open(fileSavePath, "wb") as f:
+                    f.write(fileContent)
+                data_reduction_files.append(fileSavePath)
+            except:
+                pass
+
+    # -- perform data reduction --
+    with st.spinner("Processing uploaded files..."):
+        reductor = MultipleDataReductor(
+            archiveFilenames = [f for f in data_reduction_files],
+            data_tmp_directory = tmp_reduction_dir,
+            software_path = DE_CAT,
+            isOnOff = isOnOff,
+            isCal = isCal,
+            BBCLHC = BBCLHC,
+            BBCRHC = BBCRHC)
+        file_names_to_download = reductor.performDataReduction()
+    print(f"---> file names to download: {file_names_to_download}")
 
 def archive_uploader():
     with st.form("Form"):
@@ -31,18 +91,15 @@ def archive_uploader():
 
     if submit:
         st.write(f"You selected BBC {selection[selected_bbc_lhc]} for LHC and BBC {selection[selected_bbc_rhc]} for RHC")
-        if uploaded_files is not None:
-            st.write(f"You have uploaded {len(uploaded_files)} files")
-
-        if use_caltab:
-            st.write("Caltabs will be used")
-        else:
-            st.write("Caltabs will not be used")
-
-        if is_onoff:
-            st.write(f"Reduction using on-off technique")
-        else:
-            st.write(f"Reduction using frequency-switch technique")
+        # -- display message --
+        displayMessageOnLoad(uploaded_files, use_caltab, is_onoff)
+        # -- process files --
+        processUploadedFiles(
+            uploaded_files,
+            isOnOff = is_onoff,
+            isCal = use_caltab,
+            BBCLHC = int(selection[selected_bbc_lhc]),
+            BBCRHC = int(selection[selected_bbc_rhc]))
 
 def main():
     st.set_page_config(page_title="Torun 32 m radio telescope data reductor", layout='wide')
