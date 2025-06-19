@@ -1,0 +1,8 @@
+mpmath
+barycorrpy
+tensorflow
+numpy
+pandas
+astropy
+platformdirs
+validators

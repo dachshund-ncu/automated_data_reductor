@@ -1,13 +1,51 @@
-import os,sys
-from PIL import Image
+import os
 import streamlit as st
-import numpy as np
-import pandas as pd
 from data.dataReductorMultipleFiles import MultipleDataReductor
 from datetime import datetime
-import tempfile
+import glob
+import tensorflow as tf
+from tensorflow import keras
 
 DE_CAT = os.path.dirname(os.path.abspath(__file__))
+
+
+def weighted_categorical_crossentropy(weights):
+    """
+    TLDR: this function definition is required for proper loading of tensorflow models
+    Creates a weighted categorical crossentropy loss function.
+    Args:
+        weights (dict or list): A list where indices correspond to class labels and values are weights.
+    Returns:
+        A loss function to be used in model compilation.
+    """
+
+    def loss(y_true, y_pred):
+        y_pred = tf.clip_by_value(y_pred, 1e-7, 1 - 1e-7)  # Prevent log(0)
+        y_true = tf.cast(y_true, tf.float32)
+
+        # Compute per-class weights
+        weights_per_sample = tf.reduce_sum(y_true * weights, axis=-1)
+
+        # Compute weighted loss
+        loss = -tf.reduce_sum(y_true * tf.math.log(y_pred), axis=-1) * weights_per_sample
+
+        return tf.reduce_mean(loss)
+
+    return loss
+
+
+def load_models():
+    # get saved model paths using the technique
+    filename_scan_annotator = glob.glob(os.path.join(DE_CAT, "models", "*_scan_annotator.keras"))[-1]
+    filename_broken_scans_detector = glob.glob(os.path.join(DE_CAT, "models", "*_broken_scans.keras"))[-1]
+
+    # load models using KERAS
+    scan_annotator_model = keras.models.load_model(
+        filename_scan_annotator,
+        custom_objects = {'loss': weighted_categorical_crossentropy})
+    broken_scans_detector_model = keras.models.load_model(
+        filename_broken_scans_detector)
+    return scan_annotator_model, broken_scans_detector_model
 
 def generate_timestamp_dirname():
     """
@@ -34,7 +72,9 @@ def processUploadedFiles(
         isOnOff: bool,
         isCal: bool,
         BBCLHC: int,
-        BBCRHC: int):
+        BBCRHC: int,
+        annotator_model,
+        broken_scan_model):
     # -- prepare data --
     tmp_reduction_dir = os.path.join(DE_CAT, "temporary_data", generate_timestamp_dirname())
     os.makedirs(tmp_reduction_dir, exist_ok = True)
@@ -60,7 +100,9 @@ def processUploadedFiles(
             isOnOff = isOnOff,
             isCal = isCal,
             BBCLHC = BBCLHC,
-            BBCRHC = BBCRHC)
+            BBCRHC = BBCRHC,
+            annotator_model = annotator_model,
+            broken_scans_detector_model = broken_scan_model)
         file_names_to_download = reductor.performDataReduction()
 
         # -- manage files in temporary directory --
@@ -88,7 +130,9 @@ def processUploadedFiles(
     os.remove(os.path.join(tmp_reduction_dir, f"{archive_filename}.tar.bz2"))
     os.rmdir(tmp_reduction_dir)
 
-def archive_uploader():
+def archive_uploader(
+        annotator_model,
+        broken_scan_model):
     with st.form("Form"):
         uploaded_files = st.file_uploader(
             "Upload .tar.bz2 archives",
@@ -123,11 +167,17 @@ def archive_uploader():
             isOnOff = is_onoff,
             isCal = use_caltab,
             BBCLHC = int(selection[selected_bbc_lhc]),
-            BBCRHC = int(selection[selected_bbc_rhc]))
+            BBCRHC = int(selection[selected_bbc_rhc]),
+            annotator_model = annotator_model,
+            broken_scan_model = broken_scan_model)
 
 def main():
+    scan_annotator_model, broken_scans_detector_model = load_models()
     st.set_page_config(page_title="Torun 32 m radio telescope data reductor", layout='wide')
-    archive_uploader()
+    archive_uploader(
+        annotator_model = scan_annotator_model,
+        broken_scan_model = broken_scans_detector_model
+    )
 
 if __name__ == '__main__':
     main()

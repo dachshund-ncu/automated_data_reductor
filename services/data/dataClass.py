@@ -235,25 +235,70 @@ class dataContainter:
         time *= 24
         return time
 
-    def addToStack(self, scanIndex):
+    def addToStack(
+            self,
+            scanIndex: int,
+            annotator,
+            broken_scan_detector):
         if self.__checkIfStacked(scanIndex):
             print(f"-----> scan no. {scanIndex+1} is already stacked!")
             return
+        # -- prepare for cheby fit --
+        # check if scan is broken
+        tmp_scan_data = self.obs.mergedScans[scanIndex].pols[self.actualBBC]
+        is_scan_broken = self.checkIfBroken(
+                model = broken_scan_detector,
+                data = tmp_scan_data)
+        print("Is scan broken?", is_scan_broken)
+
+        self.fitBoundsChannels = self.getFitBoundChannels(
+            model = annotator,
+            data = tmp_scan_data
+        )
+        print(self.fitBoundsChannels)
         self.scans_proceed[scanIndex] = 'ADDED'
         x,y,residuals, = self.fitChebyForScan(self.actualBBC, self.fitOrder, scanIndex)
         self.stack.append(residuals)
         self.scansInStack.append(scanIndex)
+
+    def checkIfBroken(self, model, data: np.ndarray):
+        category_labels = model.predict(data.reshape(1, 4096, 1))
+        cat = [np.argmax(s) for s in category_labels]
+        print(np.asarray(cat))
+        if np.asarray(cat)[0] == 0:
+            return False # scan is ok
+        else:
+            return True # scan is broken
+
+    def getFitBoundChannels(self, model, data: np.ndarray):
+        category_labels = model.predict(data.reshape(1, 4096, 1))
+        category_table = np.asarray([int(np.argmax(s)) for s in category_labels[0]])
+        return self.extract_category_0_bounds(category_table)
+
+    def extract_category_0_bounds(self, category):
+        new_bounds = []
+        i = 25
+        while i < len(category) - 25:
+            if category[i] == 0:
+                start = i
+                while i < len(category) and category[i] == 0:
+                    i += 1
+                end = i - 1
+                new_bounds.append([start, end])
+            else:
+                i += 1
+        return new_bounds
 
     def discardFromStack(self, scanIndex):
         self.scans_proceed[scanIndex] = 'DISCARDED'
 
     def calculateSpectrumFromStack(self):
         if len(self.stack) == 0:
-            return [-1]
+            self.meanStack = np.zeros(2048).astype(float)
         else:
             self.meanStack = np.mean(self.stack, axis=0)
-            self.finalFitRes = self.meanStack.copy()
-            return self.finalFitRes
+        self.finalFitRes = self.meanStack.copy()
+        return self.finalFitRes
 
     def deleteFromStack(self, scanIndex):
         if not self.__checkIfStacked(scanIndex):
