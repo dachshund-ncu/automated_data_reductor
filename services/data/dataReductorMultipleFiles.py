@@ -43,6 +43,7 @@ class MultipleDataReductor:
     def performDataReduction(self):
         saved_filenames: list[str] = []
         for observation in self.observationsTab:
+            observation.findCalCoefficients()
             # -- LHC --
             observation.actualBBC = self.bbcLHC
             for i in range(len(observation.obs.mergedScans)):

@@ -7,7 +7,7 @@ from data.dataReductorMultipleFiles import MultipleDataReductor
 from datetime import datetime
 import tempfile
 
-DE_CAT = os.path.dirname(__file__)
+DE_CAT = os.path.dirname(os.path.abspath(__file__))
 
 def generate_timestamp_dirname():
     """
@@ -15,7 +15,7 @@ def generate_timestamp_dirname():
     """
     now = datetime.now()
     timestamp_str = now.strftime("%Y%m%d_%H%M%S_%f")
-    return f"dir_{timestamp_str}"
+    return f"{timestamp_str}_data"
 
 def displayMessageOnLoad(uploaded_files, use_caltab, is_onoff):
     if uploaded_files is not None:
@@ -62,7 +62,31 @@ def processUploadedFiles(
             BBCLHC = BBCLHC,
             BBCRHC = BBCRHC)
         file_names_to_download = reductor.performDataReduction()
-    print(f"---> file names to download: {file_names_to_download}")
+
+        # -- manage files in temporary directory --
+        cwd = os.getcwd() # get the current working directory
+        os.chdir(tmp_reduction_dir) # change to data save directory
+        archive_filename = os.path.basename(tmp_reduction_dir)
+        os.system(f"tar -cvjf {archive_filename}.tar.bz2 *.fits") # compress.fits files
+        # remove leftover files
+
+        for filename in file_names_to_download:
+            os.remove(os.path.join(DE_CAT, filename))
+        for filename in data_reduction_files:
+            os.remove(filename)
+        os.chdir(cwd)
+
+    # set the file to download
+    with open(os.path.join(tmp_reduction_dir, f"{archive_filename}.tar.bz2"), "rb") as f:
+        st.download_button(
+            label = "Download .fits files",
+            data = f,
+            file_name = f"{archive_filename}.tar.bz2",
+            mime = None,
+            icon = ":material/download:"
+        )
+    os.remove(os.path.join(tmp_reduction_dir, f"{archive_filename}.tar.bz2"))
+    os.rmdir(tmp_reduction_dir)
 
 def archive_uploader():
     with st.form("Form"):
