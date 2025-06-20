@@ -111,7 +111,6 @@ def processUploadedFiles(
         archive_filename = os.path.basename(tmp_reduction_dir)
         os.system(f"tar -cvjf {archive_filename}.tar.bz2 *.fits") # compress.fits files
         # remove leftover files
-
         for filename in file_names_to_download:
             os.remove(os.path.join(DE_CAT, filename))
         for filename in data_reduction_files:

@@ -245,17 +245,46 @@ class dataContainter:
             return
         # -- prepare for cheby fit --
         # check if scan is broken
-        tmp_scan_data = self.obs.mergedScans[scanIndex].pols[self.actualBBC]
+        tmp_scan_data = self.obs.mergedScans[scanIndex].pols[self.actualBBC-1]
         is_scan_broken = self.checkIfBroken(
                 model = broken_scan_detector,
                 data = tmp_scan_data)
-        print("Is scan broken?", is_scan_broken)
+        if is_scan_broken:
+            return
 
-        self.fitBoundsChannels = self.getFitBoundChannels(
+        channel_categories = self.getFitBoundChannels(
             model = annotator,
             data = tmp_scan_data
         )
-        print(self.fitBoundsChannels)
+
+        # remove table
+        remove_table = self.extract_category_bounds(channel_categories, cat_to_bound = 2)
+        self.obs.mergedScans[scanIndex].removeChannels(self.actualBBC, remove_table)
+
+        # colors = {
+        #     0: 'grey',
+        #     1: 'green',
+        #     2: 'red',
+        #     3: 'blue'}
+
+        # -- temporary plot block --
+        # import matplotlib.pyplot as plt
+        # plt.style.use('ggplot')
+        # fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 7), sharex=True, sharey=True)
+        # for category in range(4):
+        #     # ---- predicted labels ----
+        #     tmp_data = tmp_scan_data.copy()
+        #     indices = channel_categories == category
+        #     tmp_data[~indices] = np.nan
+        #     axes.plot(list(range(len(tmp_data))), tmp_data, c=colors[category])
+        # axes.set_title(f"Is this scan broken? {is_scan_broken}")
+        # plt.tight_layout()
+        # source_indicator = str(round(self.obs.mjd, 3)).replace(".", "")
+        # plt.savefig(f"{scanIndex}_{source_indicator}_bbc_{self.actualBBC}.png", dpi=300)
+        # plt.close(fig)
+        # # ----------------------------
+
+        self.fitBoundsChannels = self.extract_category_bounds(channel_categories, cat_to_bound = 0)
         self.scans_proceed[scanIndex] = 'ADDED'
         x,y,residuals, = self.fitChebyForScan(self.actualBBC, self.fitOrder, scanIndex)
         self.stack.append(residuals)
@@ -273,15 +302,15 @@ class dataContainter:
     def getFitBoundChannels(self, model, data: np.ndarray):
         category_labels = model.predict(data.reshape(1, 4096, 1))
         category_table = np.asarray([int(np.argmax(s)) for s in category_labels[0]])
-        return self.extract_category_0_bounds(category_table)
+        return category_table
 
-    def extract_category_0_bounds(self, category):
+    def extract_category_bounds(self, category, cat_to_bound: int = 0):
         new_bounds = []
         i = 25
         while i < len(category) - 25:
-            if category[i] == 0:
+            if category[i] == cat_to_bound:
                 start = i
-                while i < len(category) and category[i] == 0:
+                while i < len(category) and category[i] == cat_to_bound:
                     i += 1
                 end = i - 1
                 new_bounds.append([start, end])
