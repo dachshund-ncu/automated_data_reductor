@@ -6,3 +6,4 @@ pandas
 astropy
 platformdirs
 validators
+scikit-learn
