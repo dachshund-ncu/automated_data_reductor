@@ -1,14 +1,6 @@
 # 🌌 Streamlit NCU 32m Radio Telescope Data Reductor
 An intuitive Streamlit application designed to automate the reduction of spectral data acquired from the 32-meter Nicolaus Copernicus University (NCU) Radio Telescope. This tool streamlines the post-observation processing, allowing users to effortlessly reduce their spectral data and download the resulting FITS files.
 
-# ✨ Features
-Automated Data Reduction: Seamlessly processes raw spectral data from the NCU 32m Radio Telescope.
-User-Friendly Interface: Built with Streamlit for an interactive and accessible experience.
-FITS Output: Generates industry-standard .fits files for easy integration with astronomical software.
-Direct Download: Allows users to download the reduced .fits files directly from the app.
-Pre-processing Options: (Add specific pre-processing options if applicable, e.g., baseline removal, flagging, velocity correction)
-Visualization: (Add if the app provides any plots/visualizations of the data)
-
 # 🚀 Getting Started
 Follow these steps to get the Streamlit NCU Data Reductor up and running on your local machine.
 
