@@ -4,6 +4,7 @@ SSDDR dataClass - in order to perform proper data reduction
 """
 
 from .dataClass import dataContainter
+import streamlit as st
 
 class MultipleDataReductor:
     def __init__(
@@ -40,7 +41,10 @@ class MultipleDataReductor:
 
     def performDataReduction(self):
         saved_filenames: list[str] = []
+        bar = st.progress(0, text = "Starting processing files...")
         for file_index, singleArchiveFilename in enumerate(self.archiveFilenames):
+            fraction_complete = file_index / len(self.archiveFilenames)
+            bar.progress(fraction_complete, f"Processing file no. {file_index+1} out of {len(self.archiveFilenames)}")
             # -- declare object --
             observation = dataContainter(
                 software_path = self.softwarePath,

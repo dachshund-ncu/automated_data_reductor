@@ -152,9 +152,7 @@ def archive_uploader(
 
         use_caltab = st.checkbox("Use caltabs", value = True)
         is_onoff = st.checkbox("On-off reduction", value = False)
-
         submit = st.form_submit_button("Submit")
-
 
     if submit:
         st.write(f"You selected BBC {selection[selected_bbc_lhc]} for LHC and BBC {selection[selected_bbc_rhc]} for RHC")
@@ -169,6 +167,7 @@ def archive_uploader(
             BBCRHC = int(selection[selected_bbc_rhc]),
             annotator_model = annotator_model,
             broken_scan_model = broken_scan_model)
+
 
 def main():
     scan_annotator_model, broken_scans_detector_model = load_models()
