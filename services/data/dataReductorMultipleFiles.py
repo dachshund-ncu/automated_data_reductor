@@ -19,6 +19,7 @@ class MultipleDataReductor:
             BBCRHC: int = 2):
         # -- first we need to create attributes for data reduction --
         self.archiveFilenames = archiveFilenames
+        self.dataTmpDirectory = data_tmp_directory
         self.softwarePath = software_path
         self.isOnOff = isOnOff
         self.isCal = isCal
@@ -35,19 +36,22 @@ class MultipleDataReductor:
         self.dummyObject.download_caltabs()
         del self.dummyObject
         # ----------------------
-
-        self.observationsTab = [dataContainter(
-            software_path = software_path,
-            target_filename = singleArchiveFilename,
-            data_tmp_directory = data_tmp_directory,
-            onOff = isOnOff) for singleArchiveFilename in archiveFilenames]
-        if self.isCal:
-            self.observationsTab[0].download_caltabs()
-        self.dataReductedFilenames = []
+        self.archiveFilenames = archiveFilenames
 
     def performDataReduction(self):
         saved_filenames: list[str] = []
-        for observation in self.observationsTab:
+        for file_index, singleArchiveFilename in enumerate(self.archiveFilenames):
+            # -- declare object --
+            observation = dataContainter(
+                software_path = self.softwarePath,
+                target_filename = singleArchiveFilename,
+                data_tmp_directory = self.dataTmpDirectory)
+
+            # -- if this is first file from pack - download caltabs --
+            if file_index == 0 and self.isCal:
+                observation.download_caltabs()
+
+
             observation.findCalCoefficients()
             # -- LHC --
             observation.actualBBC = self.bbcLHC
@@ -76,6 +80,6 @@ class MultipleDataReductor:
                 observation.calibrate(lhc = False)
             observation.clearStack(pol = "RHC")
             observation.bbcs_used.append(self.bbcRHC)
-
             saved_filenames.append(observation.saveReducedDataToFits())
+            del observation # delete observation object since the data was processed
         return saved_filenames

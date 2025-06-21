@@ -10,6 +10,7 @@ import numpy as np
 import configparser
 from astropy.io import fits
 import platformdirs
+from sklearn.ensemble import IsolationForest
 
 class dataContainter:
     def __init__(self,
@@ -46,6 +47,7 @@ class dataContainter:
             self.zTab = self.__getZData()
             self.tsysTab = self.__getTsysData()
             self.totalFluxTab = self.__getTotalFluxData()
+            self.outlierTable = self.__getOutliers(self.totalFluxTab)
             self.timeTab = self.__getTimeData()
             self.mergedTimeTab = self.__getMergedTimeData()
             self.velTab = self.__generateVelTab()
@@ -235,6 +237,30 @@ class dataContainter:
         time *= 24
         return time
 
+    def __getOutliers(self, totalFluxTab):
+        outlier_table = []
+        for tab in totalFluxTab:
+            outlier_table.append(IsolationForest(contamination = 0.2).fit_predict(X = tab.reshape(-1,1), y = None))
+        return np.asarray(outlier_table)
+
+    def findBrokenScan(self,
+                       scanIndex: int,
+                       tmpScanData: np.ndarray,
+                       broken_scan_detector):
+        """
+        Asseses if the scan is broken, using Neural Network
+        And total flux outlier finding (computed upon creation of this object with Isolation Forest)
+        :param scanIndex:
+        :param tmpScanData:
+        :param broken_scan_detector:
+        :return:
+        """
+        flag_network = self.checkIfBroken(
+                model = broken_scan_detector,
+                data = tmpScanData)
+        flag_outlier = self.outlierTable[self.actualBBC-1][scanIndex] == -1
+        return flag_network or flag_outlier # return True if at least one of these is True
+
     def addToStack(
             self,
             scanIndex: int,
@@ -246,18 +272,20 @@ class dataContainter:
         # -- prepare for cheby fit --
         # check if scan is broken
         tmp_scan_data = self.obs.mergedScans[scanIndex].pols[self.actualBBC-1]
-        is_scan_broken = self.checkIfBroken(
-                model = broken_scan_detector,
-                data = tmp_scan_data)
+        is_scan_broken = self.findBrokenScan(
+            scanIndex = scanIndex,
+            tmpScanData = tmp_scan_data,
+            broken_scan_detector = broken_scan_detector)
         if is_scan_broken:
             return
 
+        # label channels
         channel_categories = self.getFitBoundChannels(
             model = annotator,
             data = tmp_scan_data
         )
 
-        # remove table
+        # remove RFI
         remove_table = self.extract_category_bounds(channel_categories, cat_to_bound = 2)
         self.obs.mergedScans[scanIndex].removeChannels(self.actualBBC, remove_table)
 
