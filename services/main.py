@@ -5,7 +5,7 @@ from datetime import datetime
 import glob
 import tensorflow as tf
 from tensorflow import keras
-
+import requests
 DE_CAT = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -34,8 +34,30 @@ def weighted_categorical_crossentropy(weights):
     return loss
 
 
+def download_file_requests_basic(url, local_filename):
+    """
+    Downloads a file from a URL using requests.get() and saves it to a local file.
+    Suitable for smaller files.
+    """
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+
+        with open(local_filename, 'wb') as f:
+            f.write(response.content)
+    except:
+        pass
+
+@st.cache_resource
 def load_models():
-    # get saved model paths using the technique
+    # create directories
+    os.makedirs(os.path.join(DE_CAT, 'models'), exist_ok = True)
+    # downlad models
+    scan_annotator_address = "https://box.pionier.net.pl/f/e276dcb71d89424ab68c/?dl=1"
+    broken_scan_address = "https://box.pionier.net.pl/f/c7a1bb1e492e4197b70e/?dl=1"
+    download_file_requests_basic(scan_annotator_address, os.path.join(DE_CAT, "models", "01_scan_annotator.keras"))
+    download_file_requests_basic(broken_scan_address, os.path.join(DE_CAT, "models", "01_broken_scans.keras"))
+    # load models from a drive
     filename_scan_annotator = glob.glob(os.path.join(DE_CAT, "models", "*_scan_annotator.keras"))[-1]
     filename_broken_scans_detector = glob.glob(os.path.join(DE_CAT, "models", "*_broken_scans.keras"))[-1]
 
@@ -140,12 +162,12 @@ def archive_uploader(
 
         selection = { f"BBC {i}": i for i in range(1,5)}
         selected_bbc_lhc = st.selectbox(
-            "Select a Base Band Converter for LHC",
+            "Base Band Converter for LHC",
             selection.keys(),
             index = 0
         )
         selected_bbc_rhc = st.selectbox(
-            "Select a Base Band Converter for RHC",
+            "Base Band Converter for RHC",
             selection.keys(),
             index = 1
         )

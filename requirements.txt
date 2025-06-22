@@ -7,3 +7,5 @@ astropy
 platformdirs
 validators
 scikit-learn
+requests
+streamlit
