@@ -43,8 +43,8 @@ python3 -m pip install -r requirements.txt
 
 #### Download neural networks
 There are two neural networks to download:
-- [scan annotator](https://1drv.ms/u/c/d2d66109782dab7c/EQj0lxkBmNtBmAwfmvURFkEBkhPAxDzdDH8LYheI2e7ShQ?e=6tl2Ah) (annotates detected emission and RFI)
-- [broken scan detector](https://1drv.ms/u/c/d2d66109782dab7c/Ef8rK_u_yAJNnGFMR1b1DLIBPBgZOumrO5aOm1ge4YdUvQ?e=pqfl23) (detects if the scan is broken)
+- [scan annotator](https://box.pionier.net.pl/f/c7a1bb1e492e4197b70e/?dl=1) (annotates detected emission and RFI)
+- [broken scan detector](https://box.pionier.net.pl/f/e276dcb71d89424ab68c/?dl=1) (detects if the scan is broken)
 
 both files should be placed in ```automated_data_reductor/services/models``` directory
 
