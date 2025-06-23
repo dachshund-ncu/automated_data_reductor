@@ -37,16 +37,9 @@ source venv/bin/activate
 
 #### Install dependencies:
 
-```bashh
+```bash
 python3 -m pip install -r requirements.txt
 ```
-
-#### Download neural networks
-There are two neural networks to download:
-- [scan annotator](https://box.pionier.net.pl/f/c7a1bb1e492e4197b70e/?dl=1) (annotates detected emission and RFI)
-- [broken scan detector](https://box.pionier.net.pl/f/e276dcb71d89424ab68c/?dl=1) (detects if the scan is broken)
-
-both files should be placed in ```automated_data_reductor/services/models``` directory
 
 ## Running the App
 Once the dependencies are installed, you can run the Streamlit application:
@@ -81,7 +74,7 @@ Python
 Streamlit - For building the interactive web application.
 NumPy - For numerical operations.
 Astropy - For handling FITS files and astronomical calculations.
-SciPy - (If used for signal processing, e.g., interpolation, filtering)
+Tensorflow - for models to recognize RFI
 
 # 📄 License
 This project is licensed under the MIT License.
