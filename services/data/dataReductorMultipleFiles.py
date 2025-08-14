@@ -43,7 +43,7 @@ class MultipleDataReductor:
         saved_filenames: list[str] = []
         bar = st.progress(0, text = "Starting processing files...")
         for file_index, singleArchiveFilename in enumerate(self.archiveFilenames):
-            fraction_complete = file_index / len(self.archiveFilenames)
+            fraction_complete = (file_index + 1) / len(self.archiveFilenames)
             bar.progress(fraction_complete, f"Processing file no. {file_index+1} out of {len(self.archiveFilenames)}")
             # -- declare object --
             observation = dataContainter(
