@@ -614,7 +614,6 @@ class dataContainter:
         # -- filename --
         fname = self.obs.scans[0].sourcename + '_' + str(round(self.obs.mjd,3)).replace(".", "") + ".fits"
         result_filename = os.path.join(self.dataTmpDirectory, fname)
-        print(f"-----> Saving results to file {fname}...")
         # -- data tables --
         polLHC = np.array(self.finalLHC, dtype=np.float64)
         polRHC = np.array(self.finalRHC, dtype=np.float64)

@@ -134,9 +134,11 @@ def processUploadedFiles(
         os.system(f"tar -cvjf {archive_filename}.tar.bz2 *.fits") # compress.fits files
         # remove leftover files
         for filename in file_names_to_download:
-            os.remove(os.path.join(DE_CAT, filename))
+            if os.path.exists(os.path.join(DE_CAT, filename)):
+                os.remove(os.path.join(DE_CAT, filename))
         for filename in data_reduction_files:
-            os.remove(filename)
+            if os.path.exists(filename):
+                os.remove(filename)
         os.chdir(cwd)
 
     # set the file to download
@@ -148,8 +150,10 @@ def processUploadedFiles(
             mime = None,
             icon = ":material/download:"
         )
-    os.remove(os.path.join(tmp_reduction_dir, f"{archive_filename}.tar.bz2"))
-    os.rmdir(tmp_reduction_dir)
+    if os.path.exists(os.path.join(tmp_reduction_dir, f"{archive_filename}.tar.bz2")):
+        os.remove(os.path.join(tmp_reduction_dir, f"{archive_filename}.tar.bz2"))
+    if os.path.exists(tmp_reduction_dir):
+        os.rmdir(tmp_reduction_dir)
 
 def archive_uploader(
         annotator_model,
