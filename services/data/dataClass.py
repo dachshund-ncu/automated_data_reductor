@@ -11,8 +11,6 @@ import configparser
 from astropy.io import fits
 import platformdirs
 from sklearn.ensemble import IsolationForest
-import matplotlib.pyplot as plt
-plt.style.use("ggplot")
 
 class dataContainter:
     def __init__(self,
