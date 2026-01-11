@@ -13,6 +13,7 @@ class MultipleDataReductor:
             data_tmp_directory: str,
             annotator_model,
             broken_scans_detector_model,
+            final_scan_annotator_model,
             software_path: str = ".",
             isOnOff: bool = False,
             isCal: bool = True,
@@ -28,6 +29,7 @@ class MultipleDataReductor:
         self.bbcRHC = BBCRHC
         self.annotator_model = annotator_model
         self.broken_scans_detector = broken_scans_detector_model
+        self.final_scan_annotator_model = final_scan_annotator_model
 
         # -- download caltabs --
         self.dummyObject = dataContainter(
@@ -66,6 +68,9 @@ class MultipleDataReductor:
                     broken_scan_detector = self.broken_scans_detector)
             # handle calibration
             observation.calculateSpectrumFromStack()
+            observation.processFinalSpectrum(
+                observation.finalFitRes,
+                self.final_scan_annotator_model)
             if self.isCal:
                 observation.calibrate(lhc = True)
             observation.clearStack(pol = "LHC")
@@ -80,6 +85,9 @@ class MultipleDataReductor:
                     broken_scan_detector = self.broken_scans_detector)
             # handle calibration
             observation.calculateSpectrumFromStack()
+            observation.processFinalSpectrum(
+                observation.finalFitRes,
+                self.final_scan_annotator_model)
             if self.isCal:
                 observation.calibrate(lhc = False)
             observation.clearStack(pol = "RHC")

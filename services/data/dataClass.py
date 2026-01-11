@@ -11,6 +11,8 @@ import configparser
 from astropy.io import fits
 import platformdirs
 from sklearn.ensemble import IsolationForest
+import matplotlib.pyplot as plt
+plt.style.use("ggplot")
 
 class dataContainter:
     def __init__(self,
@@ -321,14 +323,13 @@ class dataContainter:
     def checkIfBroken(self, model, data: np.ndarray):
         category_labels = model.predict(data.reshape(1, 4096, 1))
         cat = [np.argmax(s) for s in category_labels]
-        print(np.asarray(cat))
         if np.asarray(cat)[0] == 0:
             return False # scan is ok
         else:
             return True # scan is broken
 
     def getFitBoundChannels(self, model, data: np.ndarray):
-        category_labels = model.predict(data.reshape(1, 4096, 1))
+        category_labels = model.predict(data.reshape(1, data.shape[0], 1))
         category_table = np.asarray([int(np.argmax(s)) for s in category_labels[0]])
         return category_table
 
@@ -356,6 +357,46 @@ class dataContainter:
             self.meanStack = np.mean(self.stack, axis=0)
         self.finalFitRes = self.meanStack.copy()
         return self.finalFitRes
+
+    def processFinalSpectrum(
+            self,
+            spectrum_data: np.ndarray,
+            final_scan_annotator) -> np.ndarray:
+        """
+        Processes a final spectrum
+        :param spectrum_data:  data with spectrum calculated from stack
+        :param final_scan_annotator:  a model that annotates channels
+        :return: processed spectrum
+        """
+        # discard this part if this is on-off data reduction
+        if self.isOnOff:
+            return spectrum_data
+        channel_categories = self.getFitBoundChannels(
+            model = final_scan_annotator,
+            data = spectrum_data
+        )
+        fitBoundChannels = self.extract_category_bounds(channel_categories, cat_to_bound=0)
+        final_spectrum = self.fit_poly_for_data(spectrum_data=spectrum_data, fitBoundChannels=fitBoundChannels, poly_order=10)
+        self.finalFitRes = final_spectrum
+        return final_spectrum
+
+
+    def fit_poly_for_data(self, spectrum_data, fitBoundChannels, poly_order: int = 7, ):
+        fitCHans, fitData = self.__getDataFromRangesD(spectrum_data, fitBoundChannels)
+        poly = np.polyfit(fitCHans, fitData, poly_order)
+        polyTabX = np.linspace(1, len(spectrum_data), len(spectrum_data))
+        polyTabY = np.polyval(poly, polyTabX)
+        polyTabResiduals = spectrum_data - polyTabY
+        return polyTabResiduals
+
+    def __getDataFromRangesD(self, spectrum_data, ranges):
+        fitData = []
+        fitChans = []
+        chans = np.linspace(1, len(spectrum_data), len(spectrum_data))
+        for i in ranges:
+            fitData.extend(spectrum_data[i[0]:i[1]])
+            fitChans.extend(chans[i[0]:i[1]])
+        return fitChans, fitData
 
     def deleteFromStack(self, scanIndex):
         if not self.__checkIfStacked(scanIndex):

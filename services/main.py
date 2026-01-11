@@ -55,11 +55,14 @@ def load_models():
     # downlad models
     scan_annotator_address = "https://box.pionier.net.pl/f/3fff7ab635a24ded8bd2/?dl=1"
     broken_scan_address = "https://box.pionier.net.pl/f/c7a1bb1e492e4197b70e/?dl=1"
-    download_file_requests_basic(scan_annotator_address, os.path.join(DE_CAT, "models", "01_scan_annotator.keras"))
+    final_scan_annotator_address = "https://box.pionier.net.pl/f/ab881a6e6c90425486d0/?dl=1"
+    download_file_requests_basic(scan_annotator_address, os.path.join(DE_CAT, "models", "01_single_scan_annotator.keras"))
     download_file_requests_basic(broken_scan_address, os.path.join(DE_CAT, "models", "01_broken_scans.keras"))
+    download_file_requests_basic(final_scan_annotator_address, os.path.join(DE_CAT, "models", "01_final_scan_annotator.keras"))
     # load models from a drive
-    filename_scan_annotator = glob.glob(os.path.join(DE_CAT, "models", "*_scan_annotator.keras"))[-1]
+    filename_scan_annotator = glob.glob(os.path.join(DE_CAT, "models", "*single_scan_annotator.keras"))[-1]
     filename_broken_scans_detector = glob.glob(os.path.join(DE_CAT, "models", "*_broken_scans.keras"))[-1]
+    filename_final_scan_annotator = glob.glob(os.path.join(DE_CAT, "models", "*_final_scan_annotator.keras"))[-1]
 
     # load models using KERAS
     scan_annotator_model = keras.models.load_model(
@@ -67,7 +70,11 @@ def load_models():
         custom_objects = {'loss': weighted_categorical_crossentropy})
     broken_scans_detector_model = keras.models.load_model(
         filename_broken_scans_detector)
-    return scan_annotator_model, broken_scans_detector_model
+    final_scan_annotator_model = keras.models.load_model(
+        filename_final_scan_annotator,
+        custom_objects={"loss": weighted_categorical_crossentropy}
+    )
+    return scan_annotator_model, broken_scans_detector_model, final_scan_annotator_model
 
 def generate_timestamp_dirname():
     """
@@ -95,8 +102,9 @@ def processUploadedFiles(
         isCal: bool,
         BBCLHC: int,
         BBCRHC: int,
-        annotator_model,
-        broken_scan_model):
+        annotator_model: tf.keras.models.Model,
+        broken_scan_model: tf.keras.models.Model,
+        final_scan_annotator_model: tf.keras.models.Model):
     # -- prepare data --
     tmp_reduction_dir = os.path.join(DE_CAT, "temporary_data", generate_timestamp_dirname())
     os.makedirs(tmp_reduction_dir, exist_ok = True)
@@ -124,7 +132,8 @@ def processUploadedFiles(
             BBCLHC = BBCLHC,
             BBCRHC = BBCRHC,
             annotator_model = annotator_model,
-            broken_scans_detector_model = broken_scan_model)
+            broken_scans_detector_model = broken_scan_model,
+            final_scan_annotator_model = final_scan_annotator_model)
         file_names_to_download = reductor.performDataReduction()
 
         # -- manage files in temporary directory --
@@ -156,8 +165,9 @@ def processUploadedFiles(
         os.rmdir(tmp_reduction_dir)
 
 def archive_uploader(
-        annotator_model,
-        broken_scan_model):
+        annotator_model: tf.keras.models.Model,
+        broken_scan_model: tf.keras.models.Model,
+        final_scan_annotator_model: tf.keras.models.Model) -> None:
     with st.form("Form"):
         uploaded_files = st.file_uploader(
             "Upload .tar.bz2 archives",
@@ -192,15 +202,17 @@ def archive_uploader(
             BBCLHC = int(selection[selected_bbc_lhc]),
             BBCRHC = int(selection[selected_bbc_rhc]),
             annotator_model = annotator_model,
-            broken_scan_model = broken_scan_model)
+            broken_scan_model = broken_scan_model,
+            final_scan_annotator_model=final_scan_annotator_model)
 
 
 def main():
-    scan_annotator_model, broken_scans_detector_model = load_models()
+    scan_annotator_model, broken_scans_detector_model, final_scan_annotator = load_models()
     st.set_page_config(page_title="Torun 32 m radio telescope data reductor", layout='wide')
     archive_uploader(
         annotator_model = scan_annotator_model,
-        broken_scan_model = broken_scans_detector_model
+        broken_scan_model = broken_scans_detector_model,
+        final_scan_annotator_model = final_scan_annotator
     )
 
 if __name__ == '__main__':
