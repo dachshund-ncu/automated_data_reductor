@@ -53,7 +53,7 @@ def load_models():
     # create directories
     os.makedirs(os.path.join(DE_CAT, 'models'), exist_ok = True)
     # downlad models
-    scan_annotator_address = "https://box.pionier.net.pl/f/3fff7ab635a24ded8bd2/?dl=1"
+    scan_annotator_address = "https://box.pionier.net.pl/f/2093ab41430447d8a0a2/?dl=1"
     broken_scan_address = "https://box.pionier.net.pl/f/c7a1bb1e492e4197b70e/?dl=1"
     final_scan_annotator_address = "https://box.pionier.net.pl/f/ab881a6e6c90425486d0/?dl=1"
     download_file_requests_basic(scan_annotator_address, os.path.join(DE_CAT, "models", "01_single_scan_annotator.keras"))
