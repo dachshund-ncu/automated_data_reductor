@@ -1,3 +1,4 @@
+streamlit>=1.30.0
 mpmath
 barycorrpy
 tensorflow
@@ -8,4 +9,3 @@ platformdirs
 validators
 scikit-learn
 requests
-streamlit
