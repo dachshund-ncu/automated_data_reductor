@@ -1,4 +1,4 @@
-protobuf~=5.28.0
+protobuf~=3.20.3
 mpmath
 barycorrpy
 tensorflow
