@@ -1,9 +1,12 @@
 """
 Class, that holds the whole data
+This is slightly modified version of dataClass from
+simpleSingleDishDataReductor
 """
 
 import tarfile
-from .scanObservation import observation
+# from .scanObservation import observation
+from ncu_salsa_rt4 import ScanSet as observation
 from .caltabClass import caltab
 import os
 import numpy as np
@@ -11,6 +14,7 @@ import configparser
 from astropy.io import fits
 import platformdirs
 from sklearn.ensemble import IsolationForest
+
 
 class dataContainter:
     def __init__(self,
@@ -42,8 +46,7 @@ class dataContainter:
         ]
         self.dataTmpDirectory = data_tmp_directory
         if target_filename is not None:
-            self.__openTheArchive(target_filename)
-            self.__processData()
+            self.obs = observation(target_filename, self.isOnOff, debug=True)
             self.zTab = self.__getZData()
             self.tsysTab = self.__getTsysData()
             self.totalFluxTab = self.__getTotalFluxData()
@@ -143,7 +146,7 @@ class dataContainter:
         Fits polynomial for specified BBC, with specified order and for 
         specified scan, returns tables X and Y with polynomial and fit residuals
         '''
-        polyTabX, polyTabY, self.polyTabResiduals = self.obs.mergedScans[scannr].fitCheby(bbc, order, self.fitBoundsChannels)
+        polyTabX, polyTabY, self.polyTabResiduals = self.obs.mergedScans[scannr].fit_cheby(bbc, order, self.fitBoundsChannels)
         if not self.isOnOff:
             return polyTabX, polyTabY, self.__halveResiduals(self.polyTabResiduals)
         else:
@@ -287,7 +290,7 @@ class dataContainter:
 
         # remove RFI
         remove_table = self.extract_category_bounds(channel_categories, cat_to_bound = 2)
-        self.obs.mergedScans[scanIndex].removeChannels(self.actualBBC, remove_table)
+        self.obs.mergedScans[scanIndex].remove_channels(self.actualBBC, remove_table)
 
         # colors = {
         #     0: 'grey',

@@ -1,11 +1,8 @@
 streamlit>=1.30.0
-mpmath
-barycorrpy
 tensorflow
 numpy
-pandas
-astropy
 platformdirs
 validators
 scikit-learn
 requests
+git+https://github.com/dachshund-ncu/ncu-salsa-rt4.git
