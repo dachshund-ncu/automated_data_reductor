@@ -7,7 +7,7 @@ import tensorflow as tf
 from tensorflow import keras
 import requests
 DE_CAT = os.path.dirname(os.path.abspath(__file__))
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1" # to force CPU usage for infer
 
 def weighted_categorical_crossentropy(weights):
     """
