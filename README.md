@@ -1,5 +1,6 @@
 # 🌌 Streamlit NCU 32m Radio Telescope Data Reductor
 An intuitive Streamlit application designed to automate the reduction of spectral data acquired from the 32-meter Nicolaus Copernicus University (NCU) Radio Telescope. This tool streamlines the post-observation processing, allowing users to effortlessly reduce their spectral data and download the resulting FITS files.
+Utilizes [SALSA](https://github.com/dachshund-ncu/ncu-salsa-rt4) library for signal processing.
 
 # 🚀 Getting Started
 Follow these steps to get the Streamlit NCU Data Reductor up and running on your local machine.
@@ -54,11 +55,11 @@ Click "submit" button. Processing might take a while. The progress bar will keep
 Once the reduction is complete, a download link will appear, allowing you to save the processed .fits file(s) to your local machine.
 
 ## 🛠️ Technologies Used
-Python
-Streamlit - For building the interactive web application.
-NumPy - For numerical operations.
-Astropy - For handling FITS files and astronomical calculations.
-Tensorflow - for models to recognize RFI
+- Streamlit - For building the interactive web application.
+- NumPy - For numerical operations.
+- Astropy - For handling FITS files and astronomical calculations.
+- Tensorflow - for models to recognize RFI and emission spikes
+
 
 # 📄 License
 This project is licensed under the MIT License.
