@@ -7,18 +7,8 @@ Follow these steps to get the Streamlit NCU Data Reductor up and running on your
 ## Prerequisites
 Before you begin, ensure you have the following installed:
 
-- Python 3.9 - 3.11
-- pip
-### Python packages:
-- mpmath
-- barycorrpy
-- tensorflow
-- numpy
-- pandas
-- astropy
-- platformdirs
-- validators
-- scikit-learn
+- Python 3.11 - 3.13
+- [UV](https://docs.astral.sh/uv/)
 
 ## Installation
 #### Clone the repository:
@@ -28,24 +18,18 @@ git https://github.com/dachshund-ncu/automated_data_reductor.git
 cd automated_data_reductor
 ```
 
-#### Create a virtual environment (recommended):
-
+#### Install application:
 ```bash
-python -m venv venv
-source venv/bin/activate
-```
-
-#### Install dependencies:
-
-```bash
-python3 -m pip install -r requirements.txt
+uv python pin 3.12
+uv sync
+uv tool install .
 ```
 
 ## Running the App
-Once the dependencies are installed, you can run the Streamlit application:
+Once the dependencies are installed, you can run the Streamlit application by typing anywhere:
 
 ```bash
-streamlit run services/main.py
+art4r
 ```
 The app will automatically open in your web browser (usually at http://localhost:8501).
 
