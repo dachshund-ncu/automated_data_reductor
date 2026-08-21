@@ -5,7 +5,6 @@ import tarfile
 import tempfile
 from pathlib import Path
 from datetime import datetime
-
 import requests
 import numpy as np
 import tensorflow as tf
@@ -23,7 +22,6 @@ MODELS_DIR = CACHE_DIR / "models"
 # Wymuszenie CPU dla wnioskowania TF
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-
 def weighted_categorical_crossentropy(weights):
     """
     Creates a weighted categorical crossentropy loss function.
@@ -37,7 +35,6 @@ def weighted_categorical_crossentropy(weights):
         return tf.reduce_mean(loss_val)
 
     return loss
-
 
 def download_file_requests_basic(url: str, local_filename: Path) -> None:
     """
@@ -93,7 +90,6 @@ def generate_timestamp_dirname() -> str:
     now = datetime.now()
     return f"{now.strftime('%Y%m%d_%H%M%S_%f')}_data"
 
-
 def processUploadedFiles(
         uploadedFiles: list,
         isOnOff: bool,
@@ -103,7 +99,21 @@ def processUploadedFiles(
         annotator_model: tf.keras.models.Model,
         broken_scan_model: tf.keras.models.Model,
         final_scan_annotator_model: tf.keras.models.Model):
-    
+    """
+    An utility, that processes uploaded files. Holds multiple flags, at the end enables for
+    data downloading.
+
+    Args:
+        uploadedFiles (list): list of uploaded .tar.bz2 files
+        isOnOff (bool): flag that hosts on/off data reduction state
+        isCal (bool): flag that specifies if calibration tables need to be used
+        BBCLHC (int): which BBC to use for LHC
+        BBCRHC (int): which BBC to use for RHC
+        annotator_model (tf.keras.models.Model): model for single scan segmentation (RFI and emission)
+        broken_scan_model (tf.keras.models.Model): model for broken scan recognigion
+        final_scan_annotator_model (tf.keras.models.Model): model for final scan segmentation (RFI and emission)
+    """
+
     # -- perform all actions using temporary files --
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_reduction_dir = Path(tmp_dir) / generate_timestamp_dirname()
@@ -153,12 +163,18 @@ def processUploadedFiles(
                     icon=":material/download:"
                 )
 
-
 def archive_uploader(
         annotator_model: tf.keras.models.Model,
         broken_scan_model: tf.keras.models.Model,
         final_scan_annotator_model: tf.keras.models.Model) -> None:
-    
+    """
+    Piece of interface for .tar.bz2 archives loading
+    Args:
+        annotator_model (tf.keras.models.Model): RFI and Emission segmentation model (single scan). Must be Keras one
+        broken_scan_model (tf.keras.models.Model): Broken scan recognition model. Must be Keras one
+        final_scan_annotator_model (tf.keras.models.Model): RFI and Emission segmentation model (final scan)
+    """
+
     with st.form("Form"):
         uploaded_files = st.file_uploader(
             "Upload .tar.bz2 archives",
@@ -200,7 +216,6 @@ def archive_uploader(
             final_scan_annotator_model=final_scan_annotator_model
         )
 
-
 def main():
     """
     Main function of the reductor
@@ -213,7 +228,6 @@ def main():
         broken_scan_model=broken_scans_detector_model,
         final_scan_annotator_model=final_scan_annotator
     )
-
 
 def cli():
     """
