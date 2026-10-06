@@ -10,8 +10,6 @@ import matplotlib.pyplot as plt
 _de_cat = os.path.dirname(__file__)
 plt.style.use("ggplot")
 
-    
-    
 colors  = {
     0: 'grey',
     1: 'green',
@@ -24,39 +22,44 @@ categories = {
     3: 'edge'
 }
 
+def _get_category_from_proba(categories_proba: np.ndarray):
+    category = np.asarray([int(np.argmax(s)) for s in categories_proba])
+    return category
+
 def test_data_loading():
     print(data_archives)
 
 def plot_single_scan_categories(
-        raw_data: np.ndarray,
-        scan_categories: np.ndarray) -> None:
+        scan_raw_data: np.ndarray,
+        scan_channel_probabilities: np.ndarray,
+        scan_number: int) -> None:
+    # -- misc: add a save directory --
     plot_directory = os.path.join(_de_cat, "plots")
     os.makedirs(plot_directory, exist_ok=True)
 
-    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 8))
+    # -- prepare scan categories --
+    scan_channel_categories = _get_category_from_proba(scan_channel_probabilities)
+
+    # -- plot data --
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 8))
     for category in range(3):
-        # ---- manual labels ----
-        tmp_data = raw_data.copy()
-        indices = scan_categories == category
-        tmp_data[~indices] = np.nan
-        axes[0].plot(list(range(len(tmp_data))), tmp_data, c=colors[category], label = categories[category])
-
         # ---- predicted labels ----
-        tmp_data = raw_data.copy()
-        indices = scan_categories == category
+        tmp_data = scan_raw_data.copy()
+        indices = scan_channel_categories == category
         tmp_data[~indices] = np.nan
-        axes[1].plot(list(range(len(tmp_data))), tmp_data, c=colors[category])
-    # ---- apperance settings ---- 
-    axes[0].legend()
-    # axes[0].set_title(f"Scan no. {index}")
-    axes[1].set_xlabel("Channel")
-    axes[0].set_ylabel("Manual annotations")
-    axes[1].set_ylabel("Model predictions")
-    fig.tight_layout()
+        ax.plot(list(range(len(tmp_data))), tmp_data, c=colors[category], label=categories[category])
 
+    # -- apperance settings -- 
+    ax.set_title(f"Scan no. {scan_number}")
+    ax.set_xlabel("Channel no")
+    ax.set_ylabel("Amplitude")
+    ax.legend()
+    fig.tight_layout()
+    plt.savefig(os.path.join(plot_directory, f"scan_{scan_number}.png"), dpi=100)
+    plt.close(fig)
 
 def test_single_scan_annotation():
-    for archive in cepa_archives:
+    for archive in data_archives:
         # -- load data --
         scan_set = ScanSet(
             archive_filename=archive,
@@ -66,15 +69,22 @@ def test_single_scan_annotation():
 
         # -- load all scans --
         scan_data = []
-        for scan in scan_set.scans:
+        for scan in scan_set.mergedScans:
             for bbc_index in range(4):
-                scan_data.append(scan.spectr_bbc_final[bbc_index])
+                scan_data.append(scan.pols[bbc_index])
         scan_data = np.asarray(scan_data)
 
         # -- load model --
         segmentation_model = UNet1D.from_file(single_scan_annotator_filename)
         predictions = segmentation_model.predict(scan_data)
-        print(np.asarray(predictions).shape)
+        for scan_index in range(len(scan_data)):
+            single_scan_raw_data = scan_data[scan_index]
+            signle_scan_predictions = predictions[scan_index]
+            plot_single_scan_categories(
+                scan_raw_data = single_scan_raw_data,
+                scan_channel_probabilities=signle_scan_predictions,
+                scan_number=scan_index
+            )
 
 if __name__ == "__main__":
     test_data_loading()
