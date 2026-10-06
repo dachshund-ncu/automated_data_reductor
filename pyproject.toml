@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "art4r"
+name = "auto_ssddr"
 version = "0.8"
 description = "Streamlit application - NCU RT4 6.7 GHz automated data reduction tool"
 readme = "README.md"
@@ -16,11 +16,12 @@ dependencies = [
     "validators",
     "scikit-learn",
     "requests",
+    "torch",
     "ncu-salsa-rt4 @ git+https://github.com/dachshund-ncu/ncu-salsa-rt4.git",
 ]
 
 [project.scripts]
-art4r = "services.main:cli"
+auto_ssddr = "services.main:cli"
 
 [tool.hatch.build.targets.wheel]
 packages = ["services", "data"]

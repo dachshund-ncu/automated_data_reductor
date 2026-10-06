@@ -288,6 +288,8 @@ class dataContainter:
             data = tmp_scan_data
         )
 
+        print(np.count_nonzero(channel_categories))
+        
         # remove RFI
         remove_table = self.extract_category_bounds(channel_categories, cat_to_bound = 2)
         self.obs.mergedScans[scanIndex].remove_channels(self.actualBBC, remove_table)
@@ -316,12 +318,15 @@ class dataContainter:
         # # ----------------------------
 
         self.fitBoundsChannels = self.extract_category_bounds(channel_categories, cat_to_bound = 0)
-        self.scans_proceed[scanIndex] = 'ADDED'
         x,y,residuals, = self.fitChebyForScan(self.actualBBC, self.fitOrder, scanIndex)
         self.stack.append(residuals)
         self.scansInStack.append(scanIndex)
+        self.scans_proceed[scanIndex] = 'ADDED' # change status at the end
+
 
     def checkIfBroken(self, model, data: np.ndarray):
+        if model is None:
+            return False # scan is ok
         category_labels = model.predict(data.reshape(1, 4096, 1))
         cat = [np.argmax(s) for s in category_labels]
         if np.asarray(cat)[0] == 0:
@@ -330,8 +335,8 @@ class dataContainter:
             return True # scan is broken
 
     def getFitBoundChannels(self, model, data: np.ndarray):
-        category_labels = model.predict(data.reshape(1, data.shape[0], 1))
-        category_table = np.asarray([int(np.argmax(s)) for s in category_labels[0]])
+        category_labels = model.predict(np.asarray([data]))[0]
+        category_table = np.asarray([int(np.argmax(s)) for s in category_labels])
         return category_table
 
     def extract_category_bounds(self, category, cat_to_bound: int = 0):

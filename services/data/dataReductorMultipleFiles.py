@@ -12,8 +12,8 @@ class MultipleDataReductor:
             archiveFilenames: list[str],
             data_tmp_directory: str,
             annotator_model,
-            broken_scans_detector_model,
             final_scan_annotator_model,
+            broken_scan_detection_model = None,
             software_path: str = ".",
             isOnOff: bool = False,
             isCal: bool = True,
@@ -28,7 +28,7 @@ class MultipleDataReductor:
         self.bbcLHC = BBCLHC
         self.bbcRHC = BBCRHC
         self.annotator_model = annotator_model
-        self.broken_scans_detector = broken_scans_detector_model
+        self.broken_scan_detection_model = broken_scan_detection_model
         self.final_scan_annotator_model = final_scan_annotator_model
 
         # -- download caltabs --
@@ -65,7 +65,7 @@ class MultipleDataReductor:
                 observation.addToStack(
                     i,
                     annotator = self.annotator_model,
-                    broken_scan_detector = self.broken_scans_detector)
+                    broken_scan_detector = self.broken_scan_detection_model)
             # handle calibration
             observation.calculateSpectrumFromStack()
             observation.processFinalSpectrum(
@@ -82,7 +82,7 @@ class MultipleDataReductor:
                 observation.addToStack(
                     i,
                     annotator = self.annotator_model,
-                    broken_scan_detector = self.broken_scans_detector)
+                    broken_scan_detector = self.broken_scan_detection_model)
             # handle calibration
             observation.calculateSpectrumFromStack()
             observation.processFinalSpectrum(

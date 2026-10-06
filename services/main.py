@@ -7,39 +7,24 @@ from pathlib import Path
 from datetime import datetime
 import requests
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
 import streamlit as st
 from platformdirs import user_cache_dir
 from streamlit.web import cli as stcli
-
+from services.templates.scan_annotation_template import UNet1D
 from services.data.dataReductorMultipleFiles import MultipleDataReductor
 
 # Odpowiednie zarządzanie katalogami w zainstalowanej paczce
-CACHE_DIR = Path(user_cache_dir("art4r", "dachshund-ncu"))
+CACHE_DIR = Path(user_cache_dir("auto_ssddr", "dachshund-ncu"))
 MODELS_DIR = CACHE_DIR / "models"
 
-# Wymuszenie CPU dla wnioskowania TF
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-def weighted_categorical_crossentropy(weights):
-    """
-    Creates a weighted categorical crossentropy loss function.
-    Important for model loading
-    """
-    def loss(y_true, y_pred):
-        y_pred = tf.clip_by_value(y_pred, 1e-7, 1 - 1e-7)
-        y_true = tf.cast(y_true, tf.float32)
-        weights_per_sample = tf.reduce_sum(y_true * weights, axis=-1)
-        loss_val = -tf.reduce_sum(y_true * tf.math.log(y_pred), axis=-1) * weights_per_sample
-        return tf.reduce_mean(loss_val)
-
-    return loss
+de_cat = os.path.dirname(__file__)
+models_dir = os.path.join(de_cat, "models")
 
 def download_file_requests_basic(url: str, local_filename: Path) -> None:
     """
     Downloads a file from a URL using requests.get() if it doesn't exist.
     """
+    print(f"downloading from {url}")
     if local_filename.exists():
         return
     try:
@@ -60,30 +45,37 @@ def load_models() -> None:
     """
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
-    scan_annotator_address = "https://box.pionier.net.pl/f/2093ab41430447d8a0a2/?dl=1"
-    broken_scan_address = "https://box.pionier.net.pl/f/c7a1bb1e492e4197b70e/?dl=1"
-    final_scan_annotator_address = "https://box.pionier.net.pl/f/ab881a6e6c90425486d0/?dl=1"
+    # scan_annotator_address = "https://box.pionier.net.pl/f/2093ab41430447d8a0a2/?dl=1"
+    # broken_scan_address = "https://box.pionier.net.pl/f/c7a1bb1e492e4197b70e/?dl=1"
+    # final_scan_annotator_address = "https://box.pionier.net.pl/f/5d24d500b72f4d918059/?dl=1"
 
-    download_file_requests_basic(scan_annotator_address, MODELS_DIR / "01_single_scan_annotator.keras")
-    download_file_requests_basic(broken_scan_address, MODELS_DIR / "01_broken_scans.keras")
-    download_file_requests_basic(final_scan_annotator_address, MODELS_DIR / "01_final_scan_annotator.keras")
+    # download_file_requests_basic(scan_annotator_address, MODELS_DIR / "01_single_scan_segmentation.pt")
+    # download_file_requests_basic(broken_scan_address, MODELS_DIR / "01_broken_scans.keras")
+    # download_file_requests_basic(final_scan_annotator_address, MODELS_DIR / "01_final_scan_segmentation.pt")
 
-    filename_scan_annotator = sorted(MODELS_DIR.glob("*single_scan_annotator.keras"))[-1]
-    filename_broken_scans_detector = sorted(MODELS_DIR.glob("*_broken_scans.keras"))[-1]
-    filename_final_scan_annotator = sorted(MODELS_DIR.glob("*_final_scan_annotator.keras"))[-1]
+    # filename_scan_annotator = sorted(MODELS_DIR.glob("*_single_scan_segmentation.pt"))[-1]
+    # # filename_broken_scans_detector = sorted(MODELS_DIR.glob("*_broken_scans.keras"))[-1]
+    # filename_final_scan_annotator = sorted(MODELS_DIR.glob("*_final_scan_segmentation.pt"))[-1]
 
-    scan_annotator_model = keras.models.load_model(
-        filename_scan_annotator,
-        custom_objects={'loss': weighted_categorical_crossentropy}
-    )
-    broken_scans_detector_model = keras.models.load_model(
-        filename_broken_scans_detector
-    )
-    final_scan_annotator_model = keras.models.load_model(
-        filename_final_scan_annotator,
-        custom_objects={'loss': weighted_categorical_crossentropy}
-    )
-    return scan_annotator_model, broken_scans_detector_model, final_scan_annotator_model
+    # scan_annotator_model = keras.models.load_model(
+    #     filename_scan_annotator,
+    #     custom_objects={'loss': weighted_categorical_crossentropy}
+    # )
+    # broken_scans_detector_model = keras.models.load_model(
+    #     filename_broken_scans_detector
+    # )
+    # final_scan_annotator_model = keras.models.load_model(
+    #     filename_final_scan_annotator,
+    #     custom_objects={'loss': weighted_categorical_crossentropy}
+    # )
+    
+    filename_scan_annotator = os.path.join(models_dir, "single_scan_annotator_20261006_01.pt")
+    filename_final_scan_annotator = os.path.join(models_dir, "last_scan_annotator_20261006_01.pt")
+
+    single_scan_segmentation_model = UNet1D.from_file(filename_scan_annotator)
+    last_scan_segmentation_model = UNet1D.from_file(filename_final_scan_annotator)
+
+    return single_scan_segmentation_model, last_scan_segmentation_model
 
 
 def generate_timestamp_dirname() -> str:
@@ -96,9 +88,8 @@ def processUploadedFiles(
         isCal: bool,
         BBCLHC: int,
         BBCRHC: int,
-        annotator_model: tf.keras.models.Model,
-        broken_scan_model: tf.keras.models.Model,
-        final_scan_annotator_model: tf.keras.models.Model):
+        annotator_model: UNet1D,
+        final_scan_annotator_model: UNet1D):
     """
     An utility, that processes uploaded files. Holds multiple flags, at the end enables for
     data downloading.
@@ -139,7 +130,6 @@ def processUploadedFiles(
                 BBCLHC=BBCLHC,
                 BBCRHC=BBCRHC,
                 annotator_model=annotator_model,
-                broken_scans_detector_model=broken_scan_model,
                 final_scan_annotator_model=final_scan_annotator_model
             )
             # -- perform data reduction --
@@ -164,9 +154,8 @@ def processUploadedFiles(
                 )
 
 def archive_uploader(
-        annotator_model: tf.keras.models.Model,
-        broken_scan_model: tf.keras.models.Model,
-        final_scan_annotator_model: tf.keras.models.Model) -> None:
+        annotator_model: UNet1D,
+        final_scan_annotator_model: UNet1D) -> None:
     """
     Piece of interface for .tar.bz2 archives loading
     Args:
@@ -212,7 +201,6 @@ def archive_uploader(
             BBCLHC=int(selection[selected_bbc_lhc]),
             BBCRHC=int(selection[selected_bbc_rhc]),
             annotator_model=annotator_model,
-            broken_scan_model=broken_scan_model,
             final_scan_annotator_model=final_scan_annotator_model
         )
 
@@ -222,10 +210,9 @@ def main():
     Used ONLY by streamlit server
     """
     st.set_page_config(page_title="Torun 32 m radio telescope data reductor", layout='wide')
-    scan_annotator_model, broken_scans_detector_model, final_scan_annotator = load_models()
+    scan_annotator_model, final_scan_annotator = load_models()
     archive_uploader(
         annotator_model=scan_annotator_model,
-        broken_scan_model=broken_scans_detector_model,
         final_scan_annotator_model=final_scan_annotator
     )
 
@@ -236,7 +223,6 @@ def cli():
     main_path = Path(__file__).resolve()
     sys.argv = ["streamlit", "run", str(main_path)] + sys.argv[1:]
     sys.exit(stcli.main())
-
 
 if __name__ == '__main__':
     main()
