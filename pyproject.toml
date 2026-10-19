@@ -17,6 +17,8 @@ dependencies = [
     "scikit-learn",
     "requests",
     "torch",
+    "matplotlib",
+    "pytest",
     "ncu-salsa-rt4 @ git+https://github.com/dachshund-ncu/ncu-salsa-rt4.git",
 ]
 

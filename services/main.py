@@ -12,6 +12,7 @@ from platformdirs import user_cache_dir
 from streamlit.web import cli as stcli
 from services.templates.scan_annotation_template import UNet1D
 from services.data.dataReductorMultipleFiles import MultipleDataReductor
+from services.models import last_scan_annotator_filename, single_scan_annotator_filename
 
 # Odpowiednie zarządzanie katalogami w zainstalowanej paczce
 CACHE_DIR = Path(user_cache_dir("auto_ssddr", "dachshund-ncu"))
@@ -43,38 +44,8 @@ def load_models() -> None:
     Loads Tensorflow models to the cache directory
     Returns: None
     """
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # scan_annotator_address = "https://box.pionier.net.pl/f/2093ab41430447d8a0a2/?dl=1"
-    # broken_scan_address = "https://box.pionier.net.pl/f/c7a1bb1e492e4197b70e/?dl=1"
-    # final_scan_annotator_address = "https://box.pionier.net.pl/f/5d24d500b72f4d918059/?dl=1"
-
-    # download_file_requests_basic(scan_annotator_address, MODELS_DIR / "01_single_scan_segmentation.pt")
-    # download_file_requests_basic(broken_scan_address, MODELS_DIR / "01_broken_scans.keras")
-    # download_file_requests_basic(final_scan_annotator_address, MODELS_DIR / "01_final_scan_segmentation.pt")
-
-    # filename_scan_annotator = sorted(MODELS_DIR.glob("*_single_scan_segmentation.pt"))[-1]
-    # # filename_broken_scans_detector = sorted(MODELS_DIR.glob("*_broken_scans.keras"))[-1]
-    # filename_final_scan_annotator = sorted(MODELS_DIR.glob("*_final_scan_segmentation.pt"))[-1]
-
-    # scan_annotator_model = keras.models.load_model(
-    #     filename_scan_annotator,
-    #     custom_objects={'loss': weighted_categorical_crossentropy}
-    # )
-    # broken_scans_detector_model = keras.models.load_model(
-    #     filename_broken_scans_detector
-    # )
-    # final_scan_annotator_model = keras.models.load_model(
-    #     filename_final_scan_annotator,
-    #     custom_objects={'loss': weighted_categorical_crossentropy}
-    # )
-    
-    filename_scan_annotator = os.path.join(models_dir, "single_scan_annotator_20261006_01.pt")
-    filename_final_scan_annotator = os.path.join(models_dir, "last_scan_annotator_20261006_01.pt")
-
-    single_scan_segmentation_model = UNet1D.from_file(filename_scan_annotator)
-    last_scan_segmentation_model = UNet1D.from_file(filename_final_scan_annotator)
-
+    single_scan_segmentation_model = UNet1D.from_file(single_scan_annotator_filename)
+    last_scan_segmentation_model = UNet1D.from_file(last_scan_annotator_filename)
     return single_scan_segmentation_model, last_scan_segmentation_model
 
 
