@@ -30,7 +30,7 @@ uv tool install .
 Once the dependencies are installed, you can run the Streamlit application by typing anywhere:
 
 ```bash
-art4r
+auto_ssddr
 ```
 The app will automatically open in your web browser (usually at http://localhost:8501).
 
