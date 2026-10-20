@@ -159,15 +159,6 @@ class UNet1D(nn.Module):
 
         return self.final_conv(x)
 
-    def robust_scale_per_sample(self, X: np.ndarray) -> np.ndarray:
-        median = np.median(X, axis=1, keepdims=True)
-        p75 = np.percentile(X, 75, axis=1, keepdims=True)
-        p25 = np.percentile(X, 25, axis=1, keepdims=True)
-        iqr = p75 - p25
-        iqr = np.where(iqr == 0, 1.0, iqr) # Zabezpieczenie przed zerowym IQR
-        return (X - median) / iqr
-
-
     def predict(
         self,
         X: np.ndarray,
@@ -178,17 +169,15 @@ class UNet1D(nn.Module):
         self.eval()
         self.to(device)
 
-        x2 = X.copy()
-        x2 = self.robust_scale_per_sample(x2)
-        if x2.ndim == 2:
-            x2 = x2[:, np.newaxis, :]
+        if X.ndim == 2:
+            X = X[:, np.newaxis, :]
 
-        num_samples = len(x2)
+        num_samples = len(X)
         probs_list = []
 
         with torch.no_grad():
             for i in range(0, num_samples, batch_size):
-                batch = torch.from_numpy(x2[i : i + batch_size]).float().to(device)
+                batch = torch.from_numpy(X[i : i + batch_size]).float().to(device)
                 logits = self(batch)
                 probs = torch.softmax(logits, dim=1)
                 probs = probs.permute(0, 2, 1)
@@ -217,3 +206,10 @@ class UNet1D(nn.Module):
         return model
 
 
+    def robust_scale_per_sample(self, X: np.ndarray) -> np.ndarray:
+        median = np.median(X, axis=1, keepdims=True)
+        p75 = np.percentile(X, 75, axis=1, keepdims=True)
+        p25 = np.percentile(X, 25, axis=1, keepdims=True)
+        iqr = p75 - p25
+        iqr = np.where(iqr == 0, 1.0, iqr) # Zabezpieczenie przed zerowym IQR
+        return (X - median) / iqr
