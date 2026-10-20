@@ -776,3 +776,69 @@ class dataContainter:
         noise = self.alternateRMSCalc(spectr)
         snr = spectr.max() / noise
         return snr
+
+
+    def addToStackPresegmented(
+        self,
+        scanIndex: int,
+        channel_categories: np.ndarray,
+    ) -> bool:
+        """
+        Adds a scan to the stack using precomputed segmentation.
+
+        Returns True when the scan was successfully stacked.
+        """
+        if self.__checkIfStacked(scanIndex):
+            return False
+
+        channel_categories = np.asarray(channel_categories)
+
+        # Reject scans without enough continuum.
+        continuum_fraction = np.mean(channel_categories == 0)
+
+        if continuum_fraction < 0.5:
+            self.discardFromStack(scanIndex)
+            return False
+
+        # Remove RFI (category 2).
+        remove_table = self.extract_category_bounds(
+            channel_categories,
+            cat_to_bound=2,
+        )
+
+        self.obs.mergedScans[scanIndex].remove_channels(
+            self.actualBBC,
+            remove_table,
+        )
+
+        # Fit Chebyshev polynomial using continuum (category 0).
+        self.fitBoundsChannels = self.extract_category_bounds(
+            channel_categories,
+            cat_to_bound=0,
+        )
+
+        # Guard against insufficient continuum fit points.
+        n_fit_channels = sum(
+            max(0, end - start)
+            for start, end in self.fitBoundsChannels
+        )
+
+        if n_fit_channels <= self.fitOrder:
+            self.discardFromStack(scanIndex)
+            return False
+
+        _, _, residuals = self.fitChebyForScan(
+            self.actualBBC,
+            self.fitOrder,
+            scanIndex,
+        )
+
+        if not np.all(np.isfinite(residuals)):
+            self.discardFromStack(scanIndex)
+            return False
+
+        self.stack.append(residuals)
+        self.scansInStack.append(scanIndex)
+        self.scans_proceed[scanIndex] = "ADDED"
+
+        return True
