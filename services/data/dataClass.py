@@ -364,27 +364,55 @@ class dataContainter:
         self.finalFitRes = self.meanStack.copy()
         return self.finalFitRes
 
+
     def processFinalSpectrum(
-            self,
-            spectrum_data: np.ndarray,
-            final_scan_annotator) -> np.ndarray:
+        self,
+        spectrum_data: np.ndarray,
+        final_scan_annotator,
+    ) -> np.ndarray:
         """
-        Processes a final spectrum
-        :param spectrum_data:  data with spectrum calculated from stack
-        :param final_scan_annotator:  a model that annotates channels
-        :return: processed spectrum
+        Processes a final spectrum:
+        - Fits and subtracts continuum using category 0.
+        - Removes RFI (category 2) using linear interpolation.
         """
-        # discard this part if this is on-off data reduction
         if self.isOnOff:
             return spectrum_data
+
         channel_categories = self.getFitBoundChannels(
-            model = final_scan_annotator,
-            data = spectrum_data
+            model=final_scan_annotator,
+            data=spectrum_data,
         )
-        fitBoundChannels = self.extract_category_bounds(channel_categories, cat_to_bound=0)
-        final_spectrum = self.fit_poly_for_data(spectrum_data=spectrum_data, fitBoundChannels=fitBoundChannels, poly_order=10)
+
+        # Fit and subtract continuum.
+        fitBoundChannels = self.extract_category_bounds(
+            channel_categories,
+            cat_to_bound=0,
+        )
+
+        final_spectrum = self.fit_poly_for_data(
+            spectrum_data=spectrum_data,
+            fitBoundChannels=fitBoundChannels,
+            poly_order=10,
+        )
+
+        # Remove RFI by interpolating over category 2.
+        rfi_mask = channel_categories == 2
+        valid_mask = ~rfi_mask & np.isfinite(final_spectrum)
+
+        if np.any(rfi_mask) and np.count_nonzero(valid_mask) >= 2:
+            final_spectrum = final_spectrum.copy()
+
+            channels = np.arange(len(final_spectrum))
+
+            final_spectrum[rfi_mask] = np.interp(
+                channels[rfi_mask],
+                channels[valid_mask],
+                final_spectrum[valid_mask],
+            )
+
         self.finalFitRes = final_spectrum
         return final_spectrum
+
 
 
     def fit_poly_for_data(self, spectrum_data, fitBoundChannels, poly_order: int = 7, ):
